@@ -14,9 +14,18 @@ class VisitorManagementSystem:
             name VARCHAR(255) NOT NULL PRIMARY KEY,
             purpose VARCHAR(255) NOT NULL,
             timestamp DATETIME NOT NULL
+            
         );
         """
         self.my_cursor.execute(create_table_query)
+        row = self.my_cursor.fetchone()
+        if row is not None and row[0] == 0:
+
+            self.my_cursor.execute("ALTER TABLE vdata ADD COLUMN check_out TIMESTAMP")
+            print("New column 'check_out' added successfully.")
+        else:
+            print("Column 'check_out' already exists in the table.")
+
         self.conn.commit()
 
     def log_visitor(self, name, purpose):
@@ -38,14 +47,27 @@ class VisitorManagementSystem:
             print("\nVisitor Log:")
             for row in result:
                 print(f"ID: {row[0]} | Name: {row[1]} | Purpose: {row[2]} | Time: {row[3]}")
+                
+    def checkout_visitors(self, id):
+      
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        try:
+            query = "UPDATE vdata SET check_out = NOW() WHERE id = %s"
+            self.my_cursor.execute (query, (id,))
+            self.conn.commit()
+            print(f"Visitor with ID {id} has been successfully checked out at ")
+        except mysql.connector.Error as e:
+            print("Error checking out visitor: ", {e})  
 
+   
     def run(self):
         while True:
             print("\n1. Log Visitor")
             print("2. Display Visitors")
-            print("3. Exit")
+            print("3. Check-out")
+            print("4. Exit")
 
-            choice = input("Enter your choice (1/2/3): ")
+            choice = input("Enter your choice (1/2/3/4): ")
 
             if choice == '1':
                 name = input("Enter visitor's name: ")
@@ -53,7 +75,10 @@ class VisitorManagementSystem:
                 self.log_visitor(name, purpose)
             elif choice == '2':
                 self.display_visitors()
-            elif choice == '3':
+            elif choice =='3':
+                id = int(input("Enter visitor ID to check out: "))
+                self.checkout_visitors(id)
+            elif choice == '4':
                 print("Exiting Visitor Management System. Goodbye!")
                 break
             else:
