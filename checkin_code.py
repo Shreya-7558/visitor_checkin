@@ -1,5 +1,6 @@
 import mysql.connector
 import datetime
+import random
 
 class VisitorManagementSystem:
     def __init__(self):
@@ -27,14 +28,33 @@ class VisitorManagementSystem:
             print("Column 'check_out' already exists in the table.")
 
         self.conn.commit()
+        
+    def generate_random_name(self):
+        # List of common names
+        names = ["Harshal", "Ganesha", "Devyani", "Sampada", "Maithali", "Emily", "Mandira", "Dipali", "Rohan", "Olivia", "Praful", "Akash", "Mahesh", "Tinku", "Rashmi", "Pratik", "Prachit", "Shubham", "Nikunj"]
+        # Choose a random name from the list
+        return random.choice(names)
 
-    def log_visitor(self, name, purpose):
-        timestamp = datetime.datetime.now()
+    def log_visitor(self, purpose):
+        name= self.generate_random_name()
+        year = 2023
+        month = random.randint(1, 12)
+        day = random.randint(1, 28)  # Assuming February has 28 days
+        hour = random.randint(0, 23)
+        minute = random.randint(0, 59)
+        second = random.randint(0, 59)
+
+        timestamp = datetime.datetime(year, month, day, hour, minute, second)
+
         insert_query = "INSERT INTO vdata (name, purpose, timestamp) VALUES (%s, %s, %s)"
         data = (name, purpose, timestamp)
-        self.my_cursor.execute(insert_query, data)
-        self.conn.commit()
-        print(f"{name} logged in at {timestamp} for {purpose}.")
+
+        try:
+            self.my_cursor.execute(insert_query, data)
+            self.conn.commit()
+            print(f"{name} logged in at {timestamp} for {purpose}.")
+        except mysql.connector.Error as e:
+            print(f"Error logging visitor: {e}")
 
     def display_visitors(self):
         select_query = "SELECT * FROM vdata"
@@ -70,9 +90,10 @@ class VisitorManagementSystem:
             choice = input("Enter your choice (1/2/3/4): ")
 
             if choice == '1':
-                name = input("Enter visitor's name: ")
+                
                 purpose = input("Enter purpose of visit: ")
-                self.log_visitor(name, purpose)
+                
+                self.log_visitor(purpose)
             elif choice == '2':
                 self.display_visitors()
             elif choice =='3':
