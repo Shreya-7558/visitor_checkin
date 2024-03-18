@@ -68,16 +68,35 @@ class VisitorManagementSystem:
             for row in result:
                 print(f"ID: {row[0]} | Name: {row[1]} | Purpose: {row[2]} | Time: {row[3]}")
                 
-    def checkout_visitors(self, id):
-      
-        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    def checkout_random_visitor(self,id):
+        year = 2023
+        month = random.randint(1, 12)
+        day = random.randint(1, 28)  # Assuming February has 28 days
+        hour = random.randint(0, 23)
+        minute = random.randint(0, 59)
+        second = random.randint(0, 59)
+
+        timestamp = datetime.datetime(year, month, day, hour, minute, second)
         try:
-            query = "UPDATE vdata SET check_out = NOW() WHERE id = %s"
-            self.my_cursor.execute (query, (id,))
-            self.conn.commit()
-            print(f"Visitor with ID {id} has been successfully checked out at ")
+            query = "SELECT id FROM vdata "
+            self.my_cursor.execute(query)
+            visitor_ids = [row[0] for row in self.my_cursor.fetchall()]
+            
+            if visitor_ids:
+                random_visitor_id = random.choice(visitor_ids)
+                query = "UPDATE vdata SET check_out = NOW() WHERE id = %s"
+                self.my_cursor.execute(query, (id , ))
+                self.conn.commit()
+                print(f"Visitor with ID {id} has been successfully checked out at {timestamp}")
+            else:
+                print("No visitors available to check out.")
         except mysql.connector.Error as e:
-            print("Error checking out visitor: ", {e})  
+            print("Error checking out visitor:", e)
+
+    def close_connection(self):
+        self.my_cursor.close()
+        self.conn.close()
+
 
    
     def run(self):
@@ -98,7 +117,7 @@ class VisitorManagementSystem:
                 self.display_visitors()
             elif choice =='3':
                 id = int(input("Enter visitor ID to check out: "))
-                self.checkout_visitors(id)
+                self.checkout_random_visitor(id)
             elif choice == '4':
                 print("Exiting Visitor Management System. Goodbye!")
                 break
