@@ -68,50 +68,62 @@ class VisitorManagementSystem:
             for row in result:
                 print(f"ID: {row[0]} | Name: {row[1]} | Purpose: {row[2]} | Time: {row[3]}")
                 
-    def checkout_random_visitor(self,id):
-        year = 2023
-        month = random.randint(1, 12)
-        day = random.randint(1, 28)  # Assuming February has 28 days
-        hour = random.randint(0, 23)
+    def checkout_random_visitor(self, id):
+        try:
+            query = "SELECT timestamp FROM vdata WHERE id = %s"
+            self.my_cursor.execute(query, (id,))
+            timestamp = self.my_cursor.fetchone()[0]
+
+            if timestamp:  # If visitor exists
+                checkout_time = self.generate_checkout_time(timestamp)
+                
+                # Ensure checkout time is strictly after login time either date-wise or time-wise
+                while checkout_time <= timestamp:
+                    checkout_time = self.generate_checkout_time(timestamp)
+            
+                query = "UPDATE vdata SET check_out = %s WHERE id = %s AND timestamp = %s"
+                self.my_cursor.execute(query, (checkout_time, id, timestamp))
+                self.conn.commit()
+            
+                print(f"Visitor with ID {id} has been successfully checked out at {checkout_time}")
+            else:
+                print(f"No visitor found with ID {id}.")
+        except mysql.connector.Error as e:
+             print("Error checking out visitor:", e)
+
+    def generate_checkout_time(self, timestamp):
+        year = timestamp.year
+        month = timestamp.month
+        day = timestamp.day
+        hour = random.randint(timestamp.hour, 23)
         minute = random.randint(0, 59)
         second = random.randint(0, 59)
 
-        timestamp = datetime.datetime(year, month, day, hour, minute, second)
-        try:
-            query = "SELECT id FROM vdata "
-            self.my_cursor.execute(query)
-            visitor_ids = [row[0] for row in self.my_cursor.fetchall()]
-            
-            if visitor_ids:
-                random_visitor_id = random.choice(visitor_ids)
-                query = "UPDATE vdata SET check_out = NOW() WHERE id = %s"
-                self.my_cursor.execute(query, (id , ))
-                self.conn.commit()
-                print(f"Visitor with ID {id} has been successfully checked out at {timestamp}")
-            else:
-                print("No visitors available to check out.")
-        except mysql.connector.Error as e:
-            print("Error checking out visitor:", e)
+        # Ensure checkout date is strictly after login date
+        checkout_date = timestamp.date() + datetime.timedelta(days=random.randint(1, 30))
+        
+        # Construct the checkout time
+        checkout_time = datetime.datetime(checkout_date.year, checkout_date.month, checkout_date.day, hour, minute, second)
+
+        return checkout_time
 
     def close_connection(self):
         self.my_cursor.close()
         self.conn.close()
-
-
-   
+        
+    
     def run(self):
         while True:
             print("\n1. Log Visitor")
             print("2. Display Visitors")
             print("3. Check-out")
-            print("4. Exit")
+            print("4. Train Decision Tree Classifier")
+            print("5. Exit")
 
             choice = input("Enter your choice (1/2/3/4): ")
 
             if choice == '1':
-                
                 purpose = input("Enter purpose of visit: ")
-                
                 self.log_visitor(purpose)
             elif choice == '2':
                 self.display_visitors()
@@ -127,3 +139,5 @@ class VisitorManagementSystem:
 if __name__ == "__main__":
     vms = VisitorManagementSystem()
     vms.run()
+    vms.close_connection()
+    
